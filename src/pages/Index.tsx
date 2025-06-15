@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { TaskManager } from '@/components/TaskManager';
 import { HabitTracker } from '@/components/HabitTracker';
@@ -8,6 +7,7 @@ import { QuickActions } from '@/components/QuickActions';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 
 interface Task {
   id: string;
@@ -43,6 +43,7 @@ const Index = () => {
   const [habits, setHabits] = useLocalStorage<Habit[]>('productivity-habits', []);
   const [activities, setActivities] = useLocalStorage<Activity[]>('productivity-activities', []);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics'>('dashboard');
   const { toast } = useToast();
 
   // Simulate initial loading for better UX
@@ -161,22 +162,54 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <WelcomeHeader stats={stats} />
         
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 mb-8">
-          {/* Main Content Area */}
-          <div className="xl:col-span-3 space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <TaskManager tasks={tasks} setTasks={handleTaskUpdate} />
-              <HabitTracker habits={habits} setHabits={handleHabitUpdate} />
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white/60 backdrop-blur-sm rounded-full p-1 shadow-lg border border-white/20">
+            <div className="flex gap-1">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'dashboard' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'analytics' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Analytics
+              </button>
             </div>
           </div>
-          
-          {/* Sidebar */}
-          <div className="xl:col-span-1 space-y-6">
-            <StatsCards tasks={tasks} habits={habits} />
-            <QuickActions />
-            <ActivityFeed activities={activities} />
-          </div>
         </div>
+
+        {activeTab === 'dashboard' ? (
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 mb-8">
+            {/* Main Content Area */}
+            <div className="xl:col-span-3 space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <TaskManager tasks={tasks} setTasks={handleTaskUpdate} />
+                <HabitTracker habits={habits} setHabits={handleHabitUpdate} />
+              </div>
+            </div>
+            
+            {/* Sidebar */}
+            <div className="xl:col-span-1 space-y-6">
+              <StatsCards tasks={tasks} habits={habits} />
+              <QuickActions />
+              <ActivityFeed activities={activities} />
+            </div>
+          </div>
+        ) : (
+          <AnalyticsDashboard tasks={tasks} habits={habits} />
+        )}
       </div>
     </div>
   );
