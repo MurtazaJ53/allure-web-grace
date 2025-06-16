@@ -4,7 +4,7 @@ import { TrendingUp, Brain, Target, Zap, BarChart3, PieChart } from 'lucide-reac
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Pie } from 'recharts';
 import { AnalyticsService } from '@/services/analyticsService';
 
 interface AnalyticsDashboardProps {
@@ -161,7 +161,7 @@ export const AnalyticsDashboard = ({ tasks, habits }: AnalyticsDashboardProps) =
             <ResponsiveContainer width="100%" height={250}>
               <RechartsPieChart>
                 <Tooltip formatter={(value) => [`${Math.round(value as number)}%`, 'Percentage']} />
-                <RechartsPieChart 
+                <Pie 
                   data={analytics.timeDistribution}
                   cx="50%"
                   cy="50%"
@@ -173,7 +173,7 @@ export const AnalyticsDashboard = ({ tasks, habits }: AnalyticsDashboardProps) =
                   {analytics.timeDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                </RechartsPieChart>
+                </Pie>
               </RechartsPieChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-4 mt-4">

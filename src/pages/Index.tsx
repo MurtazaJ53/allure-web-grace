@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { TaskManager } from '@/components/TaskManager';
 import { HabitTracker } from '@/components/HabitTracker';
@@ -5,9 +6,10 @@ import { StatsCards } from '@/components/StatsCards';
 import { WelcomeHeader } from '@/components/WelcomeHeader';
 import { QuickActions } from '@/components/QuickActions';
 import { ActivityFeed } from '@/components/ActivityFeed';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+import { AISuggestions } from '@/components/AISuggestions';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
-import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 
 interface Task {
   id: string;
@@ -43,7 +45,7 @@ const Index = () => {
   const [habits, setHabits] = useLocalStorage<Habit[]>('productivity-habits', []);
   const [activities, setActivities] = useLocalStorage<Activity[]>('productivity-activities', []);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'ai-suggestions'>('dashboard');
   const { toast } = useToast();
 
   // Simulate initial loading for better UX
@@ -146,6 +148,25 @@ const Index = () => {
     setHabits(updatedHabits);
   }, [habits, setHabits, addActivity, toast]);
 
+  // AI suggestions handlers
+  const handleAddTaskFromAI = useCallback((task: Omit<Task, 'id' | 'createdAt'>) => {
+    const newTask: Task = {
+      ...task,
+      id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date()
+    };
+    setTasks(prev => [...prev, newTask]);
+  }, [setTasks]);
+
+  const handleAddHabitFromAI = useCallback((habit: Omit<Habit, 'id' | 'createdAt'>) => {
+    const newHabit: Habit = {
+      ...habit,
+      id: `habit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date()
+    };
+    setHabits(prev => [...prev, newHabit]);
+  }, [setHabits]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -186,6 +207,16 @@ const Index = () => {
               >
                 Analytics
               </button>
+              <button
+                onClick={() => setActiveTab('ai-suggestions')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'ai-suggestions' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                AI Assistant
+              </button>
             </div>
           </div>
         </div>
@@ -207,8 +238,15 @@ const Index = () => {
               <ActivityFeed activities={activities} />
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'analytics' ? (
           <AnalyticsDashboard tasks={tasks} habits={habits} />
+        ) : (
+          <AISuggestions 
+            tasks={tasks} 
+            habits={habits} 
+            onAddTask={handleAddTaskFromAI}
+            onAddHabit={handleAddHabitFromAI}
+          />
         )}
       </div>
     </div>
