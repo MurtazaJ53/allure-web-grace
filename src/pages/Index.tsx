@@ -11,6 +11,8 @@ import { AISuggestions } from '@/components/AISuggestions';
 import { GamificationDashboard } from '@/components/GamificationDashboard';
 import { SocialSharing } from '@/components/SocialSharing';
 import { CommunityFeed } from '@/components/CommunityFeed';
+import { EnhancedAIDashboard } from '@/components/EnhancedAIDashboard';
+import { AdvancedGamification } from '@/components/AdvancedGamification';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 
@@ -221,6 +223,16 @@ const Index = () => {
                 AI Assistant
               </button>
               <button
+                onClick={() => setActiveTab('enhanced-ai')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'enhanced-ai' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Enhanced AI
+              </button>
+              <button
                 onClick={() => setActiveTab('gamification')}
                 className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
                   activeTab === 'gamification' 
@@ -229,6 +241,16 @@ const Index = () => {
                 }`}
               >
                 Achievements
+              </button>
+              <button
+                onClick={() => setActiveTab('advanced-gamification')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'advanced-gamification' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Advanced
               </button>
               <button
                 onClick={() => setActiveTab('social')}
@@ -270,8 +292,12 @@ const Index = () => {
             onAddTask={handleAddTaskFromAI}
             onAddHabit={handleAddHabitFromAI}
           />
+        ) : activeTab === 'enhanced-ai' ? (
+          <EnhancedAIDashboard tasks={tasks} habits={habits} />
         ) : activeTab === 'gamification' ? (
           <GamificationDashboard tasks={tasks} habits={habits} />
+        ) : activeTab === 'advanced-gamification' ? (
+          <AdvancedGamification tasks={tasks} habits={habits} />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SocialSharing 
