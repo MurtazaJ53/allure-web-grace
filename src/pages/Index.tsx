@@ -8,6 +8,9 @@ import { QuickActions } from '@/components/QuickActions';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { AISuggestions } from '@/components/AISuggestions';
+import { GamificationDashboard } from '@/components/GamificationDashboard';
+import { SocialSharing } from '@/components/SocialSharing';
+import { CommunityFeed } from '@/components/CommunityFeed';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,7 +48,7 @@ const Index = () => {
   const [habits, setHabits] = useLocalStorage<Habit[]>('productivity-habits', []);
   const [activities, setActivities] = useLocalStorage<Activity[]>('productivity-activities', []);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'ai-suggestions'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'ai-suggestions' | 'gamification' | 'social'>('dashboard');
   const { toast } = useToast();
 
   // Simulate initial loading for better UX
@@ -217,6 +220,26 @@ const Index = () => {
               >
                 AI Assistant
               </button>
+              <button
+                onClick={() => setActiveTab('gamification')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'gamification' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Achievements
+              </button>
+              <button
+                onClick={() => setActiveTab('social')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                  activeTab === 'social' 
+                    ? 'bg-white shadow-md text-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Community
+              </button>
             </div>
           </div>
         </div>
@@ -240,13 +263,23 @@ const Index = () => {
           </div>
         ) : activeTab === 'analytics' ? (
           <AnalyticsDashboard tasks={tasks} habits={habits} />
-        ) : (
+        ) : activeTab === 'ai-suggestions' ? (
           <AISuggestions 
             tasks={tasks} 
             habits={habits} 
             onAddTask={handleAddTaskFromAI}
             onAddHabit={handleAddHabitFromAI}
           />
+        ) : activeTab === 'gamification' ? (
+          <GamificationDashboard tasks={tasks} habits={habits} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <SocialSharing 
+              tasks={tasks} 
+              habits={habits}
+            />
+            <CommunityFeed />
+          </div>
         )}
       </div>
     </div>
