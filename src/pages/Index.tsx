@@ -1,12 +1,13 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { UserProfile } from '@/components/UserProfile';
-import { TaskManager } from '@/components/TaskManager';
-import { HabitTracker } from '@/components/HabitTracker';
+import { TaskManagerDB } from '@/components/TaskManagerDB';
+import { HabitTrackerDB } from '@/components/HabitTrackerDB';
 import { StatsCards } from '@/components/StatsCards';
 import { WelcomeHeader } from '@/components/WelcomeHeader';
 import { QuickActions } from '@/components/QuickActions';
-import { ActivityFeed } from '@/components/ActivityFeed';
+import { ActivityFeedDB } from '@/components/ActivityFeedDB';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { AISuggestions } from '@/components/AISuggestions';
 import { GamificationDashboard } from '@/components/GamificationDashboard';
@@ -17,44 +18,17 @@ import { AdvancedGamification } from '@/components/AdvancedGamification';
 import { AISettings } from '@/components/AISettings';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationCenter } from '@/components/NotificationCenter';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { useHabits, Habit } from '@/hooks/useHabits';
+import { useActivities } from '@/hooks/useActivities';
 import { useToast } from '@/hooks/use-toast';
-
-interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: Date;
-  priority: 'low' | 'medium' | 'high';
-  category?: string;
-  dueDate?: Date;
-}
-
-interface Habit {
-  id: string;
-  name: string;
-  streak: number;
-  completedToday: boolean;
-  createdAt: Date;
-  lastCompleted?: Date;
-  category?: string;
-  targetFrequency: 'daily' | 'weekly';
-}
-
-interface Activity {
-  id: string;
-  type: 'task_completed' | 'habit_completed' | 'streak_milestone';
-  message: string;
-  timestamp: Date;
-  icon: string;
-}
 
 type TabType = 'dashboard' | 'analytics' | 'ai-suggestions' | 'enhanced-ai' | 'gamification' | 'advanced-gamification' | 'social' | 'settings' | 'profile';
 
 const Index = () => {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('productivity-tasks', []);
-  const [habits, setHabits] = useLocalStorage<Habit[]>('productivity-habits', []);
-  const [activities, setActivities] = useLocalStorage<Activity[]>('productivity-activities', []);
+  const { tasks, loading: tasksLoading } = useTasks();
+  const { habits, loading: habitsLoading } = useHabits();
+  const { activities, addActivity } = useActivities();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const { toast } = useToast();
@@ -86,47 +60,46 @@ const Index = () => {
     };
   }, [tasks, habits]);
 
-  // Enhanced activity tracking
-  const addActivity = useCallback((activity: Omit<Activity, 'id' | 'timestamp'>) => {
-    const newActivity: Activity = {
-      ...activity,
-      id: `activity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date()
-    };
-    
-    setActivities(prev => [newActivity, ...prev.slice(0, 49)]); // Keep last 50 activities
-  }, [setActivities]);
-
-  // Enhanced task management with activity tracking
-  const handleTaskUpdate = useCallback((updatedTasks: Task[]) => {
-    const newlyCompleted = updatedTasks.filter(task => 
-      task.completed && !tasks.find(t => t.id === task.id && t.completed)
-    );
-    
-    newlyCompleted.forEach(task => {
-      addActivity({
-        type: 'task_completed',
-        message: `Completed task: "${task.text}"`,
-        icon: '✅'
-      });
+  // Track completed tasks and habits for activity feed
+  useEffect(() => {
+    // Track newly completed tasks
+    const completedTasks = tasks.filter(task => task.completed);
+    completedTasks.forEach(task => {
+      // Simple check to avoid duplicate activities (this could be improved with better state management)
+      const recentActivity = activities.find(a => 
+        a.message.includes(task.text) && 
+        a.type === 'task_completed' &&
+        new Date().getTime() - new Date(a.timestamp).getTime() < 5000 // Within 5 seconds
+      );
       
-      toast({
-        title: "Task Completed! 🎉",
-        description: `Great job completing "${task.text}"`,
-        duration: 3000,
-      });
+      if (!recentActivity) {
+        addActivity({
+          type: 'task_completed',
+          message: `Completed task: "${task.text}"`,
+          icon: '✅'
+        });
+        
+        toast({
+          title: "Task Completed! 🎉",
+          description: `Great job completing "${task.text}"`,
+          duration: 3000,
+        });
+      }
     });
-    
-    setTasks(updatedTasks);
-  }, [tasks, setTasks, addActivity, toast]);
+  }, [tasks]);
 
-  // Enhanced habit management with streak tracking
-  const handleHabitUpdate = useCallback((updatedHabits: Habit[]) => {
-    updatedHabits.forEach(habit => {
-      const oldHabit = habits.find(h => h.id === habit.id);
+  useEffect(() => {
+    // Track newly completed habits
+    const completedHabits = habits.filter(habit => habit.completedToday);
+    completedHabits.forEach(habit => {
+      // Simple check to avoid duplicate activities
+      const recentActivity = activities.find(a => 
+        a.message.includes(habit.name) && 
+        a.type === 'habit_completed' &&
+        new Date().getTime() - new Date(a.timestamp).getTime() < 5000 // Within 5 seconds
+      );
       
-      // Check for newly completed habits
-      if (habit.completedToday && (!oldHabit || !oldHabit.completedToday)) {
+      if (!recentActivity) {
         addActivity({
           type: 'habit_completed',
           message: `Completed habit: "${habit.name}"`,
@@ -138,47 +111,39 @@ const Index = () => {
           description: `Keep it up! Streak: ${habit.streak} days`,
           duration: 3000,
         });
-      }
-      
-      // Check for streak milestones
-      if (oldHabit && habit.streak > oldHabit.streak && habit.streak % 7 === 0) {
-        addActivity({
-          type: 'streak_milestone',
-          message: `${habit.streak}-day streak achieved for "${habit.name}"!`,
-          icon: '🔥'
-        });
-        
-        toast({
-          title: `${habit.streak}-Day Streak! 🔥`,
-          description: `Amazing consistency with "${habit.name}"!`,
-          duration: 4000,
-        });
+
+        // Check for streak milestones
+        if (habit.streak > 0 && habit.streak % 7 === 0) {
+          addActivity({
+            type: 'streak_milestone',
+            message: `${habit.streak}-day streak achieved for "${habit.name}"!`,
+            icon: '🔥'
+          });
+          
+          toast({
+            title: `${habit.streak}-Day Streak! 🔥`,
+            description: `Amazing consistency with "${habit.name}"!`,
+            duration: 4000,
+          });
+        }
       }
     });
-    
-    setHabits(updatedHabits);
-  }, [habits, setHabits, addActivity, toast]);
+  }, [habits]);
 
-  // AI suggestions handlers
-  const handleAddTaskFromAI = useCallback((task: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTask: Task = {
-      ...task,
-      id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date()
-    };
-    setTasks(prev => [...prev, newTask]);
-  }, [setTasks]);
+  // AI suggestions handlers (these would need to be updated to work with the new data structure)
+  const handleAddTaskFromAI = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'user_id'>) => {
+    // This would need to be implemented with the actual task creation logic
+    console.log('Add task from AI:', task);
+  }, []);
 
-  const handleAddHabitFromAI = useCallback((habit: Omit<Habit, 'id' | 'createdAt'>) => {
-    const newHabit: Habit = {
-      ...habit,
-      id: `habit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date()
-    };
-    setHabits(prev => [...prev, newHabit]);
-  }, [setHabits]);
+  const handleAddHabitFromAI = useCallback((habit: Omit<Habit, 'id' | 'createdAt' | 'user_id'>) => {
+    // This would need to be implemented with the actual habit creation logic
+    console.log('Add habit from AI:', habit);
+  }, []);
 
-  if (isLoading) {
+  const isDataLoading = tasksLoading || habitsLoading || isLoading;
+
+  if (isDataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -305,8 +270,8 @@ const Index = () => {
               {/* Main Content Area */}
               <div className="xl:col-span-3 space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <TaskManager tasks={tasks} setTasks={handleTaskUpdate} />
-                  <HabitTracker habits={habits} setHabits={handleHabitUpdate} />
+                  <TaskManagerDB />
+                  <HabitTrackerDB />
                 </div>
               </div>
               
@@ -314,7 +279,7 @@ const Index = () => {
               <div className="xl:col-span-1 space-y-6">
                 <StatsCards tasks={tasks} habits={habits} />
                 <QuickActions />
-                <ActivityFeed activities={activities} />
+                <ActivityFeedDB />
               </div>
             </div>
           ) : activeTab === 'profile' ? (

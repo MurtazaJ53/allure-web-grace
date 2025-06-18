@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      habits: {
+        Row: {
+          category: string | null
+          completed_today: boolean | null
+          created_at: string | null
+          id: string
+          last_completed: string | null
+          name: string
+          streak: number | null
+          target_frequency: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed_today?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_completed?: string | null
+          name: string
+          streak?: number | null
+          target_frequency?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed_today?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_completed?: string | null
+          name?: string
+          streak?: number | null
+          target_frequency?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       password_reset_requests: {
         Row: {
           created_at: string | null
@@ -72,6 +111,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          category: string | null
+          completed: boolean | null
+          created_at: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          text: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          text: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          text?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activities: {
         Row: {
           activity_description: string | null
@@ -101,6 +176,33 @@ export type Database = {
           ip_address?: unknown | null
           metadata?: Json | null
           user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_activity_feed: {
+        Row: {
+          created_at: string | null
+          icon: string
+          id: string
+          message: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon: string
+          id?: string
+          message: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string
+          id?: string
+          message?: string
+          type?: string
           user_id?: string
         }
         Relationships: []
