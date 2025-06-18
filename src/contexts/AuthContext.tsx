@@ -23,7 +23,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -51,6 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: userData
       }
     });
+    
+    if (error) {
+      console.error('Sign up error:', error);
+    }
+    
     return { error };
   };
 
@@ -59,11 +66,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password
     });
+    
+    if (error) {
+      console.error('Sign in error:', error);
+    }
+    
     return { error };
   };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Sign out error:', error);
+    }
+    
     return { error };
   };
 
@@ -73,6 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
     });
+    
+    if (error) {
+      console.error('Reset password error:', error);
+    }
+    
     return { error };
   };
 

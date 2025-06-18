@@ -34,16 +34,25 @@ export function UserProfile() {
   }, [user]);
 
   const fetchProfile = async () => {
+    if (!user) return;
+    
     try {
+      console.log('Fetching profile for user:', user.id);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile fetch error:', error);
+        throw error;
+      }
+      
+      console.log('Profile fetched successfully:', data);
       setProfile(data);
     } catch (error: any) {
+      console.error('Failed to load profile:', error);
       toast({
         title: "Error",
         description: "Failed to load profile",
@@ -56,6 +65,8 @@ export function UserProfile() {
 
   const updateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user) return;
+    
     setUpdating(true);
     
     const formData = new FormData(e.currentTarget);
@@ -67,12 +78,16 @@ export function UserProfile() {
     };
 
     try {
+      console.log('Updating profile for user:', user.id, updates);
       const { error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user?.id);
+        .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
       await fetchProfile();
       toast({
@@ -80,6 +95,7 @@ export function UserProfile() {
         description: "Your profile has been updated successfully"
       });
     } catch (error: any) {
+      console.error('Profile update failed:', error);
       toast({
         title: "Update Failed",
         description: error.message,
