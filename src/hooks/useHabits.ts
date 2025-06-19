@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useActivities } from '@/hooks/useActivities';
 
 export interface Habit {
   id: string;
@@ -21,6 +22,7 @@ export function useHabits() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addActivity } = useActivities();
 
   const fetchHabits = async () => {
     if (!user) {
@@ -126,6 +128,28 @@ export function useHabits() {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Log activity when habit is marked as completed today
+      if (updates.completedToday === true) {
+        const habit = habits.find(h => h.id === id);
+        if (habit && !habit.completedToday) {
+          await addActivity({
+            type: 'habit_completed',
+            message: `Completed habit: "${habit.name}"`,
+            icon: '🎯'
+          });
+
+          // Log streak milestone if it's a significant milestone
+          const newStreak = updates.streak || habit.streak;
+          if (newStreak > 0 && (newStreak % 7 === 0 || newStreak % 30 === 0)) {
+            await addActivity({
+              type: 'streak_milestone',
+              message: `Reached ${newStreak}-day streak for "${habit.name}"! 🔥`,
+              icon: '🔥'
+            });
+          }
+        }
+      }
 
       setHabits(prev => prev.map(habit => 
         habit.id === id ? { ...habit, ...updates } : habit
