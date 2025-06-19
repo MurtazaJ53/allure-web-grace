@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useActivities } from '@/hooks/useActivities';
 
 export interface Task {
   id: string;
@@ -21,7 +20,6 @@ export function useTasks() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { addActivity } = useActivities();
 
   const fetchTasks = async () => {
     if (!user) {
@@ -123,18 +121,6 @@ export function useTasks() {
         .eq('user_id', user.id);
 
       if (error) throw error;
-
-      // Log activity when task is completed
-      if (updates.completed === true) {
-        const task = tasks.find(t => t.id === id);
-        if (task && !task.completed) {
-          await addActivity({
-            type: 'task_completed',
-            message: `Completed task: "${task.text}"`,
-            icon: '✅'
-          });
-        }
-      }
 
       setTasks(prev => prev.map(task => 
         task.id === id ? { ...task, ...updates } : task
