@@ -31,6 +31,8 @@ const Index = () => {
   const { activities, addActivity } = useActivities();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [lastProcessedTasks, setLastProcessedTasks] = useState<Set<string>>(new Set());
+  const [lastProcessedHabits, setLastProcessedHabits] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Simulate initial loading for better UX
@@ -60,20 +62,18 @@ const Index = () => {
     };
   }, [tasks, habits]);
 
-  // Track completed tasks and habits for activity feed
+  // Track completed tasks for activity feed
   useEffect(() => {
-    // Track newly completed tasks
+    if (tasks.length === 0) return;
+
     const completedTasks = tasks.filter(task => task.completed);
-    completedTasks.forEach(task => {
-      // Simple check to avoid duplicate activities (this could be improved with better state management)
-      const recentActivity = activities.find(a => 
-        a.message.includes(task.text) && 
-        a.type === 'task_completed' &&
-        new Date().getTime() - new Date(a.timestamp).getTime() < 5000 // Within 5 seconds
-      );
-      
-      if (!recentActivity) {
-        addActivity({
+    const newlyCompletedTasks = completedTasks.filter(task => !lastProcessedTasks.has(task.id));
+
+    if (newlyCompletedTasks.length > 0) {
+      newlyCompletedTasks.forEach(async (task) => {
+        console.log('Adding task completion activity for:', task.text);
+        
+        await addActivity({
           type: 'task_completed',
           message: `Completed task: "${task.text}"`,
           icon: '✅'
@@ -84,23 +84,25 @@ const Index = () => {
           description: `Great job completing "${task.text}"`,
           duration: 3000,
         });
-      }
-    });
-  }, [tasks]);
+      });
 
+      // Update the set of processed tasks
+      setLastProcessedTasks(new Set([...lastProcessedTasks, ...newlyCompletedTasks.map(t => t.id)]));
+    }
+  }, [tasks, lastProcessedTasks, addActivity, toast]);
+
+  // Track completed habits for activity feed
   useEffect(() => {
-    // Track newly completed habits
+    if (habits.length === 0) return;
+
     const completedHabits = habits.filter(habit => habit.completedToday);
-    completedHabits.forEach(habit => {
-      // Simple check to avoid duplicate activities
-      const recentActivity = activities.find(a => 
-        a.message.includes(habit.name) && 
-        a.type === 'habit_completed' &&
-        new Date().getTime() - new Date(a.timestamp).getTime() < 5000 // Within 5 seconds
-      );
-      
-      if (!recentActivity) {
-        addActivity({
+    const newlyCompletedHabits = completedHabits.filter(habit => !lastProcessedHabits.has(habit.id));
+
+    if (newlyCompletedHabits.length > 0) {
+      newlyCompletedHabits.forEach(async (habit) => {
+        console.log('Adding habit completion activity for:', habit.name);
+        
+        await addActivity({
           type: 'habit_completed',
           message: `Completed habit: "${habit.name}"`,
           icon: '🎯'
@@ -114,7 +116,7 @@ const Index = () => {
 
         // Check for streak milestones
         if (habit.streak > 0 && habit.streak % 7 === 0) {
-          addActivity({
+          await addActivity({
             type: 'streak_milestone',
             message: `${habit.streak}-day streak achieved for "${habit.name}"!`,
             icon: '🔥'
@@ -126,9 +128,12 @@ const Index = () => {
             duration: 4000,
           });
         }
-      }
-    });
-  }, [habits]);
+      });
+
+      // Update the set of processed habits
+      setLastProcessedHabits(new Set([...lastProcessedHabits, ...newlyCompletedHabits.map(h => h.id)]));
+    }
+  }, [habits, lastProcessedHabits, addActivity, toast]);
 
   // AI suggestions handlers (these would need to be updated to work with the new data structure)
   const handleAddTaskFromAI = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'user_id'>) => {
