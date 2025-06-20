@@ -66,7 +66,10 @@ export const GamificationDashboard = ({ tasks, habits }: GamificationDashboardPr
 
   // Update daily challenges progress
   useEffect(() => {
-    setDailyChallenges(prev => prev.map(challenge => {
+    if (dailyChallenges.length === 0) return;
+    
+    let shouldUpdate = false;
+    const updatedChallenges = dailyChallenges.map(challenge => {
       let progress = 0;
       switch (challenge.type) {
         case 'tasks':
@@ -83,11 +86,20 @@ export const GamificationDashboard = ({ tasks, habits }: GamificationDashboardPr
       const completed = progress >= challenge.target;
       if (completed && !challenge.completed) {
         setTotalPoints(prev => prev + challenge.points);
+        shouldUpdate = true;
+      }
+      
+      if (challenge.progress !== progress || challenge.completed !== completed) {
+        shouldUpdate = true;
       }
       
       return { ...challenge, progress, completed };
-    }));
-  }, [stats, setTotalPoints, setDailyChallenges]);
+    });
+    
+    if (shouldUpdate) {
+      setDailyChallenges(updatedChallenges);
+    }
+  }, [stats.completedTasks, stats.allHabitsCompleted, stats.completionRate, dailyChallenges, setTotalPoints, setDailyChallenges]);
 
   const levelInfo = GamificationService.getProgressToNextLevel(totalPoints);
   const achievements = GamificationService.ACHIEVEMENTS;
@@ -109,12 +121,12 @@ export const GamificationDashboard = ({ tasks, habits }: GamificationDashboardPr
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-0 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${levelInfo.current.color}`}>
-              <span className="text-2xl">{levelInfo.current.icon}</span>
+            <div className="p-2 rounded-full bg-blue-100">
+              <span className="text-2xl">🏆</span>
             </div>
             <div>
-              <h3 className="text-2xl font-bold">{levelInfo.current.title}</h3>
-              <p className="text-gray-600">Level {levelInfo.current.level}</p>
+              <h3 className="text-2xl font-bold">{levelInfo.currentLevelName}</h3>
+              <p className="text-gray-600">Level {levelInfo.currentLevel}</p>
             </div>
             <div className="ml-auto text-right">
               <p className="text-3xl font-bold text-blue-600">{totalPoints}</p>
@@ -123,15 +135,15 @@ export const GamificationDashboard = ({ tasks, habits }: GamificationDashboardPr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {levelInfo.next && (
+          {levelInfo.pointsToNextLevel > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Progress to {levelInfo.next.title}</span>
-                <span>{Math.round(levelInfo.progress)}%</span>
+                <span>Progress to Next Level</span>
+                <span>{Math.round(levelInfo.progressPercentage)}%</span>
               </div>
-              <Progress value={levelInfo.progress} className="h-3" />
+              <Progress value={levelInfo.progressPercentage} className="h-3" />
               <p className="text-xs text-gray-600">
-                {levelInfo.next.pointsRequired - totalPoints} points until next level
+                {levelInfo.pointsToNextLevel} points until next level
               </p>
             </div>
           )}

@@ -1,150 +1,64 @@
-import { cn } from "@/lib/utils";
-import { CheckCircle, Target, TrendingUp } from "lucide-react";
+import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
-  size?: "sm" | "md" | "lg" | "xl";
-  variant?: "default" | "pulse" | "orbit" | "progress";
-  className?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'default' | 'orbit' | 'progress';
   message?: string;
+  className?: string;
 }
 
 export function LoadingSpinner({ 
-  size = "md", 
-  variant = "default",
-  className,
-  message
+  size = 'md', 
+  variant = 'default', 
+  message, 
+  className 
 }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: "w-6 h-6",
-    md: "w-8 h-8", 
-    lg: "w-12 h-12",
-    xl: "w-16 h-16"
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6', 
+    lg: 'w-8 h-8',
+    xl: 'w-12 h-12'
   };
 
-  const iconSizeClasses = {
-    sm: "w-3 h-3",
-    md: "w-4 h-4",
-    lg: "w-6 h-6", 
-    xl: "w-8 h-8"
+  const renderSpinner = () => {
+    switch (variant) {
+      case 'orbit':
+        return (
+          <div className={cn('relative', sizeClasses[size])}>
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-600 dark:border-t-blue-400 animate-spin"></div>
+            <div className="absolute inset-1 rounded-full border border-transparent border-t-blue-400 dark:border-t-blue-300 animate-spin animation-delay-150"></div>
+          </div>
+        );
+      case 'progress':
+        return (
+          <div className={cn('flex items-center space-x-2', sizeClasses[size])}>
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce animation-delay-100"></div>
+              <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce animation-delay-200"></div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className={cn(
+            'animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400',
+            sizeClasses[size]
+          )}></div>
+        );
+    }
   };
 
-  if (variant === "pulse") {
-    return (
-      <div className={cn("flex flex-col items-center gap-4", className)}>
-        <div className="relative">
-          <div className={cn(
-            "rounded-full border-4 border-blue-200 dark:border-blue-900",
-            sizeClasses[size]
-          )}>
-            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
-          </div>
-          <div className={cn(
-            "absolute inset-0 flex items-center justify-center animate-pulse",
-          )}>
-            <CheckCircle className={cn("text-blue-600", iconSizeClasses[size])} />
-          </div>
-        </div>
-        {message && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 animate-pulse">
-            {message}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (variant === "orbit") {
-    return (
-      <div className={cn("flex flex-col items-center gap-4", className)}>
-        <div className={cn("relative", sizeClasses[size])}>
-          {/* Central icon */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Target className={cn("text-blue-600", iconSizeClasses[size])} />
-          </div>
-          
-          {/* Orbiting elements */}
-          <div className="absolute inset-0 animate-spin" style={{ animationDuration: "3s" }}>
-            <CheckCircle className={cn(
-              "absolute top-0 left-1/2 transform -translate-x-1/2 text-green-500",
-              iconSizeClasses[size === "xl" ? "md" : "sm"]
-            )} />
-          </div>
-          
-          <div className="absolute inset-0 animate-spin" style={{ animationDuration: "4s", animationDirection: "reverse" }}>
-            <TrendingUp className={cn(
-              "absolute bottom-0 left-1/2 transform -translate-x-1/2 text-purple-500",
-              iconSizeClasses[size === "xl" ? "md" : "sm"]
-            )} />
-          </div>
-        </div>
-        {message && (
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {message}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (variant === "progress") {
-    return (
-      <div className={cn("flex flex-col items-center gap-4", className)}>
-        <div className="relative">
-          <div className={cn(
-            "rounded-full border-4 border-gray-200 dark:border-gray-700",
-            sizeClasses[size]
-          )}>
-            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-r-transparent border-b-transparent animate-spin" 
-                 style={{ animationDuration: "1.5s" }} />
-          </div>
-          <div className={cn(
-            "absolute inset-0 flex items-center justify-center",
-          )}>
-            <div className="text-blue-600 font-bold text-xs">
-              {size === "xl" ? "TF" : "T"}
-            </div>
-          </div>
-        </div>
-        {message && (
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {message}
-            </p>
-            <div className="mt-2 w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" 
-                   style={{ width: "60%", animation: "progress 2s ease-in-out infinite" }} />
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Default variant
   return (
-    <div className={cn("flex flex-col items-center gap-4", className)}>
-      <div className={cn(
-        "relative rounded-full border-4 border-blue-200 dark:border-blue-900",
-        sizeClasses[size]
-      )}>
-        <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
-        <div className="absolute inset-0 rounded-full border-4 border-purple-400 border-r-transparent border-l-transparent animate-spin" 
-             style={{ animationDuration: "2s", animationDirection: "reverse" }} />
-      </div>
+    <div className={cn('flex flex-col items-center justify-center space-y-4', className)}>
+      {renderSpinner()}
       {message && (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-600 dark:text-gray-400 animate-pulse">
           {message}
         </p>
       )}
     </div>
   );
 }
-
-// Add custom keyframes to global CSS
-export const loadingSpinnerStyles = `
-@keyframes progress {
-  0% { width: 10%; }
-  50% { width: 70%; }
-  100% { width: 10%; }
-}
-`;

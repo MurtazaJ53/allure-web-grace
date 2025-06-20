@@ -1,22 +1,11 @@
-
 export interface Achievement {
   id: string;
   title: string;
   description: string;
   icon: string;
-  category: 'tasks' | 'habits' | 'streaks' | 'consistency' | 'productivity';
-  condition: (data: any) => boolean;
   points: number;
-  unlockedAt?: Date;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
-
-export interface UserLevel {
-  level: number;
-  title: string;
-  pointsRequired: number;
-  color: string;
-  icon: string;
+  condition: (stats: any) => boolean;
 }
 
 export interface DailyChallenge {
@@ -25,180 +14,150 @@ export interface DailyChallenge {
   description: string;
   type: 'tasks' | 'habits' | 'productivity';
   target: number;
-  progress: number;
   points: number;
-  expiresAt: Date;
+  progress: number;
   completed: boolean;
+  expiresAt: string;
+}
+
+export interface LevelInfo {
+  currentLevel: number;
+  currentLevelName: string;
+  pointsInCurrentLevel: number;
+  pointsToNextLevel: number;
+  progressPercentage: number;
+  totalPoints: number;
 }
 
 export class GamificationService {
-  static readonly USER_LEVELS: UserLevel[] = [
-    { level: 1, title: 'Beginner', pointsRequired: 0, color: 'text-gray-600 bg-gray-100', icon: '🌱' },
-    { level: 2, title: 'Motivated', pointsRequired: 100, color: 'text-green-600 bg-green-100', icon: '💪' },
-    { level: 3, title: 'Focused', pointsRequired: 300, color: 'text-blue-600 bg-blue-100', icon: '🎯' },
-    { level: 4, title: 'Dedicated', pointsRequired: 600, color: 'text-purple-600 bg-purple-100', icon: '⭐' },
-    { level: 5, title: 'Champion', pointsRequired: 1000, color: 'text-yellow-600 bg-yellow-100', icon: '🏆' },
-    { level: 6, title: 'Master', pointsRequired: 1500, color: 'text-orange-600 bg-orange-100', icon: '💎' },
-    { level: 7, title: 'Legend', pointsRequired: 2500, color: 'text-red-600 bg-red-100', icon: '👑' },
-  ];
-
-  static readonly ACHIEVEMENTS: Achievement[] = [
+  static ACHIEVEMENTS: Achievement[] = [
     {
       id: 'first-task',
       title: 'Getting Started',
       description: 'Complete your first task',
-      icon: '✅',
-      category: 'tasks',
-      condition: (data) => data.completedTasks >= 1,
+      icon: '🎯',
       points: 10,
-      rarity: 'common'
+      rarity: 'common',
+      condition: (stats) => stats.completedTasks >= 1
     },
     {
       id: 'task-master',
       title: 'Task Master',
-      description: 'Complete 100 tasks',
-      icon: '🎯',
-      category: 'tasks',
-      condition: (data) => data.completedTasks >= 100,
-      points: 100,
-      rarity: 'epic'
+      description: 'Complete 10 tasks',
+      icon: '✅',
+      points: 50,
+      rarity: 'rare',
+      condition: (stats) => stats.completedTasks >= 10
     },
     {
       id: 'habit-starter',
-      title: 'Habit Builder',
+      title: 'Habit Starter',
       description: 'Create your first habit',
       icon: '🌱',
-      category: 'habits',
-      condition: (data) => data.totalHabits >= 1,
       points: 15,
-      rarity: 'common'
+      rarity: 'common',
+      condition: (stats) => stats.totalHabits >= 1
     },
     {
-      id: 'streak-warrior',
-      title: 'Streak Warrior',
-      description: 'Maintain a 30-day streak',
+      id: 'streak-week',
+      title: 'Week Warrior',
+      description: 'Maintain a 7-day streak',
       icon: '🔥',
-      category: 'streaks',
-      condition: (data) => data.maxStreak >= 30,
-      points: 150,
-      rarity: 'rare'
+      points: 100,
+      rarity: 'epic',
+      condition: (stats) => stats.maxStreak >= 7
     },
     {
-      id: 'consistency-king',
-      title: 'Consistency King',
-      description: 'Complete all habits for 7 days straight',
-      icon: '👑',
-      category: 'consistency',
-      condition: (data) => data.perfectDays >= 7,
-      points: 200,
-      rarity: 'epic'
-    },
-    {
-      id: 'productivity-guru',
-      title: 'Productivity Guru',
-      description: 'Achieve 90% task completion rate',
-      icon: '⚡',
-      category: 'productivity',
-      condition: (data) => data.completionRate >= 90,
+      id: 'perfectionist',
+      title: 'Perfectionist',
+      description: 'Complete all habits in a day',
+      icon: '💎',
       points: 75,
-      rarity: 'rare'
-    },
-    {
-      id: 'legendary-achiever',
-      title: 'Legendary Achiever',
-      description: 'Reach 1000 total points',
-      icon: '🌟',
-      category: 'productivity',
-      condition: (data) => data.totalPoints >= 1000,
-      points: 300,
-      rarity: 'legendary'
+      rarity: 'rare',
+      condition: (stats) => stats.allHabitsCompleted && stats.totalHabits > 0
     }
   ];
 
-  static calculateUserLevel(totalPoints: number): UserLevel {
-    for (let i = this.USER_LEVELS.length - 1; i >= 0; i--) {
-      if (totalPoints >= this.USER_LEVELS[i].pointsRequired) {
-        return this.USER_LEVELS[i];
+  static LEVEL_THRESHOLDS = [0, 100, 250, 500, 1000, 2000, 3500, 5500, 8000, 12000, 17000];
+  static LEVEL_NAMES = [
+    'Beginner', 'Novice', 'Apprentice', 'Practitioner', 'Expert',
+    'Master', 'Grandmaster', 'Legend', 'Mythic', 'Transcendent', 'Infinite'
+  ];
+
+  static getProgressToNextLevel(totalPoints: number): LevelInfo {
+    let currentLevel = 0;
+    for (let i = 0; i < this.LEVEL_THRESHOLDS.length; i++) {
+      if (totalPoints >= this.LEVEL_THRESHOLDS[i]) {
+        currentLevel = i;
+      } else {
+        break;
       }
     }
-    return this.USER_LEVELS[0];
+
+    const currentLevelPoints = this.LEVEL_THRESHOLDS[currentLevel] || 0;
+    const nextLevelPoints = this.LEVEL_THRESHOLDS[currentLevel + 1] || this.LEVEL_THRESHOLDS[this.LEVEL_THRESHOLDS.length - 1];
+    const pointsInCurrentLevel = totalPoints - currentLevelPoints;
+    const pointsToNextLevel = nextLevelPoints - totalPoints;
+    const progressPercentage = ((pointsInCurrentLevel) / (nextLevelPoints - currentLevelPoints)) * 100;
+
+    return {
+      currentLevel: currentLevel + 1,
+      currentLevelName: this.LEVEL_NAMES[currentLevel] || 'Max Level',
+      pointsInCurrentLevel,
+      pointsToNextLevel: Math.max(0, pointsToNextLevel),
+      progressPercentage: Math.min(100, Math.max(0, progressPercentage)),
+      totalPoints
+    };
   }
 
-  static getProgressToNextLevel(totalPoints: number): { current: UserLevel; next: UserLevel | null; progress: number } {
-    const currentLevel = this.calculateUserLevel(totalPoints);
-    const currentIndex = this.USER_LEVELS.findIndex(l => l.level === currentLevel.level);
-    const nextLevel = currentIndex < this.USER_LEVELS.length - 1 ? this.USER_LEVELS[currentIndex + 1] : null;
-    
-    if (!nextLevel) {
-      return { current: currentLevel, next: null, progress: 100 };
-    }
-
-    const progress = ((totalPoints - currentLevel.pointsRequired) / (nextLevel.pointsRequired - currentLevel.pointsRequired)) * 100;
-    return { current: currentLevel, next: nextLevel, progress: Math.min(progress, 100) };
-  }
-
-  static checkAchievements(data: any, unlockedAchievements: string[]): Achievement[] {
+  static checkAchievements(stats: any, unlockedAchievements: string[]): Achievement[] {
     return this.ACHIEVEMENTS.filter(achievement => 
-      !unlockedAchievements.includes(achievement.id) && achievement.condition(data)
+      !unlockedAchievements.includes(achievement.id) && 
+      achievement.condition(stats)
     );
   }
 
   static generateDailyChallenges(): DailyChallenge[] {
-    const today = new Date();
-    const tomorrow = new Date(today);
+    const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
 
-    const challenges = [
+    const challenges: DailyChallenge[] = [
       {
         id: 'daily-tasks',
-        title: 'Daily Achiever',
-        description: 'Complete 5 tasks today',
-        type: 'tasks' as const,
-        target: 5,
+        title: 'Task Champion',
+        description: 'Complete 3 tasks today',
+        type: 'tasks',
+        target: 3,
+        points: 30,
         progress: 0,
-        points: 25,
-        expiresAt: tomorrow,
-        completed: false
+        completed: false,
+        expiresAt: tomorrow.toISOString()
       },
       {
-        id: 'habit-streak',
+        id: 'daily-habits',
         title: 'Habit Hero',
         description: 'Complete all your habits today',
-        type: 'habits' as const,
+        type: 'habits',
         target: 1,
+        points: 50,
         progress: 0,
-        points: 30,
-        expiresAt: tomorrow,
-        completed: false
+        completed: false,
+        expiresAt: tomorrow.toISOString()
       },
       {
-        id: 'productivity-boost',
-        title: 'Productivity Boost',
-        description: 'Maintain 80% completion rate',
-        type: 'productivity' as const,
+        id: 'daily-productivity',
+        title: 'Productivity Pro',
+        description: 'Achieve 80% task completion rate',
+        type: 'productivity',
         target: 80,
+        points: 40,
         progress: 0,
-        points: 35,
-        expiresAt: tomorrow,
-        completed: false
+        completed: false,
+        expiresAt: tomorrow.toISOString()
       }
     ];
 
     return challenges;
-  }
-
-  static calculatePoints(action: string, data?: any): number {
-    const pointValues = {
-      'task_completed': 5,
-      'habit_completed': 10,
-      'streak_milestone_7': 25,
-      'streak_milestone_14': 50,
-      'streak_milestone_30': 100,
-      'perfect_day': 40,
-      'challenge_completed': 25
-    };
-
-    return pointValues[action as keyof typeof pointValues] || 0;
   }
 }
