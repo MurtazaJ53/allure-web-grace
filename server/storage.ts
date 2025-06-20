@@ -1,29 +1,25 @@
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  profiles, 
+  users, 
   tasks, 
   habits, 
   userActivityFeed,
-  type Profile, 
-  type InsertProfile,
+  type User,
+  type UpsertUser,
   type Task,
   type InsertTask,
   type Habit,
   type InsertHabit,
   type Activity,
-  type InsertActivity,
-  type User,
-  type InsertUser
+  type InsertActivity
 } from "@shared/schema";
 
 export interface IStorage {
-  // User/Profile methods
+  // User/Profile methods - required for Replit Auth
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   
   // Task methods
   getTasks(userId: string): Promise<Task[]>;
@@ -45,36 +41,30 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User/Profile methods
+  // User/Profile methods - required for Replit Auth
   async getUser(id: string): Promise<User | undefined> {
-    const result = await db.select().from(profiles).where(eq(profiles.id, id)).limit(1);
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(profiles).where(eq(profiles.username, username)).limit(1);
-    return result[0];
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
-    return result[0];
-  }
-
-  async createUser(user: InsertUser): Promise<User> {
-    const [result] = await db.insert(profiles).values({
-      id: crypto.randomUUID(),
-      ...user,
-    }).returning();
-    return result;
-  }
-
-  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
-    const result = await db.update(profiles).set({
-      ...user,
-      updatedAt: new Date()
-    }).where(eq(profiles.id, id)).returning();
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   // Task methods

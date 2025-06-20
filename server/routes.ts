@@ -1,10 +1,26 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertTaskSchema, insertHabitSchema, insertActivitySchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+
   // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Profile routes
   app.get("/api/profile/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
@@ -19,13 +35,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profile/:userId", async (req, res) => {
+  app.put("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
-      const user = await storage.updateUser(userId, req.body);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
+      const userId = req.user.claims.sub;
+      const user = await storage.upsertUser({ id: userId, ...req.body });
       res.json(user);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -34,9 +47,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task routes
-  app.get("/api/tasks/:userId", async (req, res) => {
+  app.get("/api/tasks", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       const tasks = await storage.getTasks(userId);
       res.json(tasks);
     } catch (error) {
@@ -45,9 +58,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks", async (req, res) => {
+  app.post("/api/tasks", isAuthenticated, async (req: any, res) => {
     try {
-      const validatedTask = insertTaskSchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const validatedTask = insertTaskSchema.parse({ ...req.body, userId });
       const task = await storage.createTask(validatedTask);
       res.status(201).json(task);
     } catch (error) {
@@ -85,9 +99,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Habit routes
-  app.get("/api/habits/:userId", async (req, res) => {
+  app.get("/api/habits", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       const habits = await storage.getHabits(userId);
       res.json(habits);
     } catch (error) {
@@ -96,9 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/habits", async (req, res) => {
+  app.post("/api/habits", isAuthenticated, async (req: any, res) => {
     try {
-      const validatedHabit = insertHabitSchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const validatedHabit = insertHabitSchema.parse({ ...req.body, userId });
       const habit = await storage.createHabit(validatedHabit);
       res.status(201).json(habit);
     } catch (error) {
@@ -136,9 +151,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Activity routes
-  app.get("/api/activities/:userId", async (req, res) => {
+  app.get("/api/activities", isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
+      const userId = req.user.claims.sub;
       const activities = await storage.getActivities(userId);
       res.json(activities);
     } catch (error) {
@@ -147,9 +162,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/activities", async (req, res) => {
+  app.post("/api/activities", isAuthenticated, async (req: any, res) => {
     try {
-      const validatedActivity = insertActivitySchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const validatedActivity = insertActivitySchema.parse({ ...req.body, userId });
       const activity = await storage.createActivity(validatedActivity);
       res.status(201).json(activity);
     } catch (error) {

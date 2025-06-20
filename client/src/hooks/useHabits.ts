@@ -30,7 +30,7 @@ export function useHabits() {
     }
 
     try {
-      const data = await habitsApi.list(user.id);
+      const data = await habitsApi.list();
       const formattedHabits = data.map(habit => ({
         id: habit.id,
         name: habit.name,

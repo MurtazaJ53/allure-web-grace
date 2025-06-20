@@ -32,11 +32,11 @@ async function apiRequest<T>(
 
 // Profile API
 export const profileApi = {
-  get: (userId: string) => 
-    apiRequest<any>(`/api/profile/${userId}`),
+  get: () => 
+    apiRequest<any>('/api/auth/user'),
   
-  update: (userId: string, data: any) =>
-    apiRequest<any>(`/api/profile/${userId}`, {
+  update: (data: any) =>
+    apiRequest<any>('/api/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
@@ -44,8 +44,8 @@ export const profileApi = {
 
 // Tasks API
 export const tasksApi = {
-  list: (userId: string) =>
-    apiRequest<any[]>(`/api/tasks/${userId}`),
+  list: () =>
+    apiRequest<any[]>('/api/tasks'),
   
   create: (task: any) =>
     apiRequest<any>('/api/tasks', {
@@ -67,8 +67,8 @@ export const tasksApi = {
 
 // Habits API
 export const habitsApi = {
-  list: (userId: string) =>
-    apiRequest<any[]>(`/api/habits/${userId}`),
+  list: () =>
+    apiRequest<any[]>('/api/habits'),
   
   create: (habit: any) =>
     apiRequest<any>('/api/habits', {
@@ -90,8 +90,8 @@ export const habitsApi = {
 
 // Activities API
 export const activitiesApi = {
-  list: (userId: string) =>
-    apiRequest<any[]>(`/api/activities/${userId}`),
+  list: () =>
+    apiRequest<any[]>('/api/activities'),
   
   create: (activity: any) =>
     apiRequest<any>('/api/activities', {

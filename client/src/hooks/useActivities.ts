@@ -27,7 +27,7 @@ export function useActivities() {
     }
 
     try {
-      const data = await activitiesApi.list(user.id);
+      const data = await activitiesApi.list();
       const formattedActivities = data.map(activity => ({
         id: activity.id,
         type: activity.type as 'task_completed' | 'habit_completed' | 'streak_milestone',

@@ -29,7 +29,7 @@ export function useTasks() {
     }
 
     try {
-      const data = await tasksApi.list(user.id);
+      const data = await tasksApi.list();
       const formattedTasks = data.map(task => ({
         id: task.id,
         text: task.text,

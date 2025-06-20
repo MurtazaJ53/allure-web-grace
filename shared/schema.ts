@@ -1,19 +1,33 @@
-import { pgTable, text, uuid, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, integer, boolean, timestamp, pgEnum, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const appRoleEnum = pgEnum('app_role', ['admin', 'user']);
 
-export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  dateOfBirth: text("date_of_birth"),
-  mobileNumber: text("mobile_number"),
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  isActive: boolean("is_active").default(true),
 });
+
+// Keep profiles as alias for backward compatibility
+export const profiles = users;
 
 export const userRoles = pgTable("user_roles", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -23,7 +37,7 @@ export const userRoles = pgTable("user_roles", {
 
 export const tasks = pgTable("tasks", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   text: text("text").notNull(),
   completed: boolean("completed").default(false),
   priority: text("priority").default('medium'),
@@ -35,7 +49,7 @@ export const tasks = pgTable("tasks", {
 
 export const habits = pgTable("habits", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   name: text("name").notNull(),
   streak: integer("streak").default(0),
   completedToday: boolean("completed_today").default(false),
@@ -48,7 +62,7 @@ export const habits = pgTable("habits", {
 
 export const userActivityFeed = pgTable("user_activity_feed", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   type: text("type").notNull(),
   message: text("message").notNull(),
   icon: text("icon").notNull(),
@@ -56,8 +70,7 @@ export const userActivityFeed = pgTable("user_activity_feed", {
 });
 
 // Insert schemas
-export const insertProfileSchema = createInsertSchema(profiles).omit({
-  id: true,
+export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
 });
@@ -80,8 +93,8 @@ export const insertActivitySchema = createInsertSchema(userActivityFeed).omit({
 });
 
 // Types
-export type InsertProfile = z.infer<typeof insertProfileSchema>;
-export type Profile = typeof profiles.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
 
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
@@ -92,8 +105,7 @@ export type Habit = typeof habits.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof userActivityFeed.$inferSelect;
 
-// Legacy exports for compatibility
-export const users = profiles;
-export const insertUserSchema = insertProfileSchema;
-export type InsertUser = InsertProfile;
-export type User = Profile;
+// Legacy compatibility
+export type Profile = User;
+export const insertProfileSchema = insertUserSchema;
+export type InsertProfile = UpsertUser;
