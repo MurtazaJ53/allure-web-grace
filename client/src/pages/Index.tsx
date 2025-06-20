@@ -22,8 +22,10 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { useHabits, Habit } from '@/hooks/useHabits';
 import { useActivities } from '@/hooks/useActivities';
 import { useToast } from '@/hooks/use-toast';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { LoadingDemo } from '@/components/LoadingDemo';
 
-type TabType = 'dashboard' | 'analytics' | 'ai-suggestions' | 'enhanced-ai' | 'gamification' | 'advanced-gamification' | 'social' | 'settings' | 'profile';
+type TabType = 'dashboard' | 'analytics' | 'ai-suggestions' | 'enhanced-ai' | 'gamification' | 'advanced-gamification' | 'social' | 'settings' | 'profile' | 'loading-demo';
 
 const Index = () => {
   const { tasks, loading: tasksLoading } = useTasks();
@@ -151,10 +153,11 @@ const Index = () => {
   if (isDataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading your dashboard...</p>
-        </div>
+        <LoadingSpinner 
+          size="xl" 
+          variant="orbit" 
+          message="Loading your dashboard..."
+        />
       </div>
     );
   }
@@ -266,6 +269,16 @@ const Index = () => {
                 >
                   Settings
                 </button>
+                <button
+                  onClick={() => setActiveTab('loading-demo')}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 text-sm ${
+                    activeTab === 'loading-demo' 
+                      ? 'bg-white dark:bg-gray-700 shadow-md text-blue-600 dark:text-blue-400' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
+                >
+                  Loading Demo
+                </button>
               </div>
             </div>
           </div>
@@ -310,6 +323,8 @@ const Index = () => {
             <div className="max-w-2xl mx-auto">
               <AISettings />
             </div>
+          ) : activeTab === 'loading-demo' ? (
+            <LoadingDemo />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <SocialSharing 

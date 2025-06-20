@@ -3,6 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes progress {
+  0% { width: 10%; }
+  50% { width: 70%; }
+  100% { width: 10%; }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
 @layer base {
