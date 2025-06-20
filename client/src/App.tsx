@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { AuthProvider, useAuth } from "@/contexts/SimpleAuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import { Landing } from "./pages/Landing";
 import { Home } from "./pages/Home";
@@ -14,23 +14,30 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function Router() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
   }
 
   return (
     <Routes>
-      {!user ? (
-        <Route path="/" element={<Landing />} />
+      {!isAuthenticated ? (
+        <>
+          <Route path="/" element={<Landing />} />
+          <Route path="*" element={<Landing />} />
+        </>
       ) : (
         <>
           <Route path="/" element={<Index />} />
           <Route path="/home" element={<Home />} />
+          <Route path="*" element={<NotFound />} />
         </>
       )}
-      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

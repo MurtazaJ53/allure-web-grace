@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Target, TrendingUp, Users } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Landing() {
+  const { signIn } = useAuth();
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-16">
@@ -16,7 +19,7 @@ export function Landing() {
           <Button 
             size="lg" 
             className="px-8 py-3 text-lg"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={signIn}
           >
             Get Started
           </Button>
@@ -79,7 +82,7 @@ export function Landing() {
           <Button 
             size="lg" 
             variant="outline"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={signIn}
           >
             Sign In to Continue
           </Button>

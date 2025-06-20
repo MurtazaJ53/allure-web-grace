@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-async function apiRequest<T>(
+export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
