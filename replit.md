@@ -30,10 +30,11 @@ TaskFlow is a comprehensive personal productivity application built with a moder
 ## Key Components
 
 ### Authentication & Authorization
-- **Provider**: Supabase Auth with email/password authentication
-- **Security**: Row Level Security (RLS) policies for data isolation
-- **Session Management**: JWT tokens with automatic refresh
-- **User Profiles**: Extended user data with preferences and settings
+- **Provider**: Replit Auth with OpenID Connect integration
+- **Security**: PostgreSQL-based session storage with secure user isolation
+- **Session Management**: Express sessions with automatic refresh and cross-device sync
+- **User Profiles**: Replit user data with profile images and basic information
+- **Cross-Device Sync**: Automatic synchronization of tasks, habits, and activities across all devices
 
 ### Task Management System
 - **Features**: Create, update, delete, and complete tasks
@@ -140,6 +141,11 @@ TaskFlow is a comprehensive personal productivity application built with a moder
 ## Changelog
 
 - June 20, 2025. Initial setup
+- June 20, 2025. Successfully migrated from Lovable to Replit with cross-device synchronization
+  - Migrated from Supabase to PostgreSQL with Drizzle ORM
+  - Implemented Replit Auth for secure user authentication
+  - Added cross-device data synchronization for tasks, habits, and activities
+  - Created database session management for persistent login across devices
 
 ## User Preferences
 
