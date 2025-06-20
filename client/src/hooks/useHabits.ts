@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SimpleAuthContext';
+import { habitsApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Habit {
@@ -30,24 +30,17 @@ export function useHabits() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('habits')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
+      const data = await habitsApi.list(user.id);
       const formattedHabits = data.map(habit => ({
         id: habit.id,
         name: habit.name,
         streak: habit.streak,
-        completedToday: habit.completed_today,
-        createdAt: new Date(habit.created_at),
-        lastCompleted: habit.last_completed ? new Date(habit.last_completed) : undefined,
+        completedToday: habit.completedToday,
+        createdAt: new Date(habit.createdAt),
+        lastCompleted: habit.lastCompleted ? new Date(habit.lastCompleted) : undefined,
         category: habit.category,
-        targetFrequency: habit.target_frequency as 'daily' | 'weekly',
-        user_id: habit.user_id
+        targetFrequency: habit.targetFrequency as 'daily' | 'weekly',
+        user_id: habit.userId
       }));
 
       setHabits(formattedHabits);
@@ -67,32 +60,28 @@ export function useHabits() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('habits')
-        .insert({
-          name: habitData.name,
-          streak: habitData.streak,
-          completed_today: habitData.completedToday,
-          category: habitData.category,
-          target_frequency: habitData.targetFrequency,
-          last_completed: habitData.lastCompleted?.toISOString(),
-          user_id: user.id
-        })
-        .select()
-        .single();
+      const newHabitData = {
+        name: habitData.name,
+        streak: habitData.streak,
+        completedToday: habitData.completedToday,
+        category: habitData.category,
+        targetFrequency: habitData.targetFrequency,
+        lastCompleted: habitData.lastCompleted?.toISOString(),
+        userId: user.id
+      };
 
-      if (error) throw error;
+      const data = await habitsApi.create(newHabitData);
 
       const newHabit: Habit = {
         id: data.id,
         name: data.name,
         streak: data.streak,
-        completedToday: data.completed_today,
-        createdAt: new Date(data.created_at),
-        lastCompleted: data.last_completed ? new Date(data.last_completed) : undefined,
+        completedToday: data.completedToday,
+        createdAt: new Date(data.createdAt),
+        lastCompleted: data.lastCompleted ? new Date(data.lastCompleted) : undefined,
         category: data.category,
-        targetFrequency: data.target_frequency as 'daily' | 'weekly',
-        user_id: data.user_id
+        targetFrequency: data.targetFrequency as 'daily' | 'weekly',
+        user_id: data.userId
       };
 
       setHabits(prev => [newHabit, ...prev]);
@@ -119,13 +108,7 @@ export function useHabits() {
       if (updates.targetFrequency !== undefined) dbUpdates.target_frequency = updates.targetFrequency;
       if (updates.lastCompleted !== undefined) dbUpdates.last_completed = updates.lastCompleted?.toISOString();
 
-      const { error } = await supabase
-        .from('habits')
-        .update(dbUpdates)
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await habitsApi.update(id, dbUpdates);
 
       setHabits(prev => prev.map(habit => 
         habit.id === id ? { ...habit, ...updates } : habit
@@ -144,13 +127,7 @@ export function useHabits() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('habits')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await habitsApi.delete(id);
 
       setHabits(prev => prev.filter(habit => habit.id !== id));
     } catch (error: any) {

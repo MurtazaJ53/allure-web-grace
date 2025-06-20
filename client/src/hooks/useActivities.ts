@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SimpleAuthContext';
+import { activitiesApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Activity {
@@ -27,22 +27,14 @@ export function useActivities() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_activity_feed')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
+      const data = await activitiesApi.list(user.id);
       const formattedActivities = data.map(activity => ({
         id: activity.id,
         type: activity.type as 'task_completed' | 'habit_completed' | 'streak_milestone',
         message: activity.message,
-        timestamp: new Date(activity.created_at),
+        timestamp: new Date(activity.createdAt),
         icon: activity.icon,
-        user_id: activity.user_id
+        user_id: activity.userId
       }));
 
       setActivities(formattedActivities);
@@ -62,26 +54,22 @@ export function useActivities() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('user_activity_feed')
-        .insert({
-          type: activityData.type,
-          message: activityData.message,
-          icon: activityData.icon,
-          user_id: user.id
-        })
-        .select()
-        .single();
+      const newActivityData = {
+        type: activityData.type,
+        message: activityData.message,
+        icon: activityData.icon,
+        userId: user.id
+      };
 
-      if (error) throw error;
+      const data = await activitiesApi.create(newActivityData);
 
       const newActivity: Activity = {
         id: data.id,
         type: data.type as 'task_completed' | 'habit_completed' | 'streak_milestone',
         message: data.message,
-        timestamp: new Date(data.created_at),
+        timestamp: new Date(data.createdAt),
         icon: data.icon,
-        user_id: data.user_id
+        user_id: data.userId
       };
 
       setActivities(prev => [newActivity, ...prev.slice(0, 49)]);

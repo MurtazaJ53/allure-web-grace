@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/SimpleAuthContext';
+import { profileApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,17 +38,7 @@ export function UserProfile() {
     
     try {
       console.log('Fetching profile for user:', user.id);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Profile fetch error:', error);
-        throw error;
-      }
-      
+      const data = await profileApi.get(user.id);
       console.log('Profile fetched successfully:', data);
       setProfile(data);
     } catch (error: any) {
@@ -79,15 +69,7 @@ export function UserProfile() {
 
     try {
       console.log('Updating profile for user:', user.id, updates);
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-
-      if (error) {
-        console.error('Profile update error:', error);
-        throw error;
-      }
+      await profileApi.update(user.id, updates);
 
       await fetchProfile();
       toast({

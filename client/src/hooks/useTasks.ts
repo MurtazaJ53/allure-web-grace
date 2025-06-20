@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { tasksApi } from '@/lib/api';
 
 export interface Task {
   id: string;
@@ -29,23 +29,16 @@ export function useTasks() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
+      const data = await tasksApi.list(user.id);
       const formattedTasks = data.map(task => ({
         id: task.id,
         text: task.text,
         completed: task.completed,
-        createdAt: new Date(task.created_at),
+        createdAt: new Date(task.createdAt),
         priority: task.priority as 'low' | 'medium' | 'high',
         category: task.category,
-        dueDate: task.due_date ? new Date(task.due_date) : undefined,
-        user_id: task.user_id
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+        user_id: task.userId
       }));
 
       setTasks(formattedTasks);
@@ -65,30 +58,26 @@ export function useTasks() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          text: taskData.text,
-          completed: taskData.completed,
-          priority: taskData.priority,
-          category: taskData.category,
-          due_date: taskData.dueDate?.toISOString(),
-          user_id: user.id
-        })
-        .select()
-        .single();
+      const newTaskData = {
+        text: taskData.text,
+        completed: taskData.completed,
+        priority: taskData.priority,
+        category: taskData.category,
+        dueDate: taskData.dueDate?.toISOString(),
+        userId: user.id
+      };
 
-      if (error) throw error;
+      const data = await tasksApi.create(newTaskData);
 
       const newTask: Task = {
         id: data.id,
         text: data.text,
         completed: data.completed,
-        createdAt: new Date(data.created_at),
+        createdAt: new Date(data.createdAt),
         priority: data.priority as 'low' | 'medium' | 'high',
         category: data.category,
-        dueDate: data.due_date ? new Date(data.due_date) : undefined,
-        user_id: data.user_id
+        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        user_id: data.userId
       };
 
       setTasks(prev => [newTask, ...prev]);
@@ -112,15 +101,9 @@ export function useTasks() {
       if (updates.completed !== undefined) dbUpdates.completed = updates.completed;
       if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
-      if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate?.toISOString();
+      if (updates.dueDate !== undefined) dbUpdates.dueDate = updates.dueDate?.toISOString();
 
-      const { error } = await supabase
-        .from('tasks')
-        .update(dbUpdates)
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await tasksApi.update(id, dbUpdates);
 
       setTasks(prev => prev.map(task => 
         task.id === id ? { ...task, ...updates } : task
@@ -139,14 +122,7 @@ export function useTasks() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
+      await tasksApi.delete(id);
       setTasks(prev => prev.filter(task => task.id !== id));
     } catch (error: any) {
       console.error('Error deleting task:', error);
