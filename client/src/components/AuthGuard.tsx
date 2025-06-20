@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthGuardProps {
@@ -8,24 +8,24 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading, signIn } = useAuth();
 
   // Redirect to home if not authenticated
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!loading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        signIn();
       }, 500); // Wait for 0.5 second before redirecting
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, loading, toast, signIn]);
 
-  if (isLoading) {
+  if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 

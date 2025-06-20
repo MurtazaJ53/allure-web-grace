@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { habitsApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
